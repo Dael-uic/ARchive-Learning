@@ -1,0 +1,248 @@
+/* ---------------------------------------------------------
+   AR 3D Learning Platform — visual identity
+   Theme: "lab blueprint" — dark slate + cyan grid lines,
+   evoking a CAD/engineering workspace rather than a generic
+   SaaS dashboard, since the content is robotics/anatomy/mechanical models.
+--------------------------------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
+
+:root{
+  --bg: #0d1420;
+  --bg-grid: #101a29;
+  --panel: #141f30;
+  --panel-2: #1a2740;
+  --line: #24344d;
+  --cyan: #5fd4c9;
+  --cyan-dim: #3a7a75;
+  --amber: #f0a960;
+  --text: #dce6f0;
+  --text-dim: #86a0bd;
+  --danger: #e8697a;
+  --radius: 3px;
+}
+
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  background:
+    linear-gradient(var(--bg-grid) 1px, transparent 1px) 0 0/38px 38px,
+    linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px) 0 0/38px 38px,
+    var(--bg);
+  color:var(--text);
+  font-family:'Inter', sans-serif;
+  line-height:1.5;
+  min-height:100vh;
+}
+
+h1,h2,h3,.mono-label{
+  font-family:'Space Grotesk', sans-serif;
+  letter-spacing:0.2px;
+}
+
+a{color:var(--cyan);}
+
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:18px 32px;
+  border-bottom:1px solid var(--line);
+  background:rgba(13,20,32,0.85);
+  backdrop-filter:blur(6px);
+  position:sticky;
+  top:0;
+  z-index:20;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:700;
+  font-size:1.05rem;
+}
+.brand .mark{
+  width:26px;height:26px;
+  border:1.5px solid var(--cyan);
+  border-radius:50%;
+  position:relative;
+  flex-shrink:0;
+}
+.brand .mark::before{
+  content:"";
+  position:absolute;
+  inset:6px;
+  border:1.5px solid var(--amber);
+  transform:rotate(45deg);
+}
+.nav-links{display:flex; gap:22px; font-size:0.92rem;}
+.nav-links a{color:var(--text-dim); text-decoration:none;}
+.nav-links a:hover, .nav-links a.active{color:var(--cyan);}
+
+.wrap{max-width:1180px; margin:0 auto; padding:36px 32px 80px;}
+
+.page-head{margin-bottom:30px;}
+.page-head .eyebrow{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.72rem;
+  color:var(--cyan-dim);
+  margin-bottom:6px;
+}
+.page-head h1{font-size:1.8rem; margin:0 0 8px; color:#fff;}
+.page-head p{color:var(--text-dim); max-width:60ch; margin:0;}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+  gap:18px;
+}
+
+.card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  transition:border-color .15s ease;
+}
+.card:hover{border-color:var(--cyan-dim);}
+.card .thumb{
+  height:150px;
+  background:var(--bg-grid);
+  display:flex; align-items:center; justify-content:center;
+  border-bottom:1px solid var(--line);
+}
+.card .thumb model-viewer{width:100%; height:100%; --poster-color: transparent;}
+.card .body{padding:16px; display:flex; flex-direction:column; gap:6px; flex:1;}
+.card .tag{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.68rem;
+  color:var(--amber);
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+}
+.card h3{margin:0; font-size:1.05rem; color:#fff;}
+.card p{color:var(--text-dim); font-size:0.88rem; margin:0; flex:1;}
+.card .go{
+  margin-top:8px;
+  font-size:0.85rem;
+  color:var(--cyan);
+  text-decoration:none;
+  font-weight:600;
+}
+
+.btn{
+  display:inline-flex; align-items:center; gap:8px;
+  background:var(--cyan);
+  color:#0a1119;
+  border:none;
+  padding:11px 20px;
+  border-radius:var(--radius);
+  font-weight:600;
+  font-size:0.92rem;
+  cursor:pointer;
+  text-decoration:none;
+}
+.btn:hover{background:#7fe0d6;}
+.btn.secondary{
+  background:transparent;
+  border:1px solid var(--line);
+  color:var(--text);
+}
+.btn.secondary:hover{border-color:var(--cyan-dim); color:var(--cyan);}
+.btn.danger{background:var(--danger); color:#2a0910;}
+
+.field{margin-bottom:16px;}
+.field label{
+  display:block;
+  font-size:0.82rem;
+  color:var(--text-dim);
+  margin-bottom:6px;
+}
+.field input, .field textarea, .field select{
+  width:100%;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  color:var(--text);
+  padding:10px 12px;
+  border-radius:var(--radius);
+  font-family:inherit;
+  font-size:0.94rem;
+}
+.field input:focus, .field textarea:focus, .field select:focus{
+  outline:none; border-color:var(--cyan);
+}
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:26px;
+}
+
+.viewer-shell{
+  display:grid;
+  grid-template-columns:1.5fr 1fr;
+  gap:22px;
+}
+@media (max-width:860px){ .viewer-shell{grid-template-columns:1fr;} }
+
+.viewer-stage{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  height:480px;
+  position:relative;
+  overflow:hidden;
+}
+.viewer-stage model-viewer{width:100%; height:100%;}
+
+.badge{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.7rem;
+  padding:3px 8px;
+  border:1px solid var(--line);
+  border-radius:20px;
+  color:var(--text-dim);
+}
+.badge.on{border-color:var(--cyan); color:var(--cyan);}
+
+.qz-option{
+  display:block;
+  width:100%;
+  text-align:left;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  color:var(--text);
+  padding:12px 14px;
+  border-radius:var(--radius);
+  margin-bottom:9px;
+  cursor:pointer;
+  font-size:0.92rem;
+}
+.qz-option:hover{border-color:var(--cyan-dim);}
+.qz-option.correct{border-color:var(--cyan); background:rgba(95,212,201,0.12);}
+.qz-option.wrong{border-color:var(--danger); background:rgba(232,105,122,0.12);}
+
+.table{width:100%; border-collapse:collapse; font-size:0.9rem;}
+.table th, .table td{
+  text-align:left; padding:10px 12px;
+  border-bottom:1px solid var(--line);
+}
+.table th{color:var(--text-dim); font-weight:500; font-family:'IBM Plex Mono', monospace; font-size:0.72rem; text-transform:uppercase;}
+
+.empty{
+  border:1px dashed var(--line);
+  border-radius:var(--radius);
+  padding:40px;
+  text-align:center;
+  color:var(--text-dim);
+}
+
+.toast{
+  position:fixed; bottom:24px; right:24px;
+  background:var(--panel-2); border:1px solid var(--cyan);
+  color:var(--text); padding:12px 18px; border-radius:var(--radius);
+  font-size:0.88rem; z-index:50;
+}

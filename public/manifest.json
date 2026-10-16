@@ -1,0 +1,9 @@
+{
+  "name": "ARchive Learning",
+  "short_name": "ARchive Learn",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0d1420",
+  "theme_color": "#0d1420",
+  "description": "Browser-based 3D and AR learning modules for robotics, anatomy, and mechanical systems."
+}

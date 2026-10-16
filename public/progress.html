@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Progress · AR 3D Learning Platform</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><span class="mark"></span> AR3D LEARN</div>
+  <div class="nav-links" id="nav-links"></div>
+</div>
+
+<div class="wrap">
+  <div class="page-head">
+    <div class="eyebrow">// MY ACTIVITY</div>
+    <h1>Progress</h1>
+    <p>A summary of the modules you've explored and how your quiz attempts went.</p>
+  </div>
+
+  <div class="grid" id="stats"></div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const student = requireRole('student');
+
+async function load(){
+  const p = await apiGet(`/students/${student.id}/progress`);
+  document.getElementById('stats').innerHTML = `
+    <div class="card"><div class="body"><div class="tag">Models</div><h3>${p.models_viewed}</h3><p>modules opened</p></div></div>
+    <div class="card"><div class="body"><div class="tag">AR</div><h3>${p.ar_sessions}</h3><p>AR sessions launched</p></div></div>
+    <div class="card"><div class="body"><div class="tag">Quizzes</div><h3>${p.quizzes_taken}</h3><p>quizzes completed</p></div></div>
+    <div class="card"><div class="body"><div class="tag">Average</div><h3>${p.average_score_pct}%</h3><p>average quiz score</p></div></div>
+  `;
+}
+renderNav('progress.html');
+load();
+</script>
+</body>
+</html>

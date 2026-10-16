@@ -1,0 +1,15 @@
+Run this on the first terminal:
+cd "C:\Users\user\Desktop\School Files\UIC\3rd Year\1st Sem\Elective 3 - Immersive Learning\Claude\ar3d\ar3d-platform" (Or you location where the dir is)
+php artisan serve
+
+Run this on the second terminal:
+ngrok http 8000
+
+Accounts:
+Student
+hdael_240000002445@uic.edu.ph
+Password: Money1237846
+
+Teacher:
+igit@gmail.com
+Password: tubol123

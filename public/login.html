@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign in · AR 3D Learning Platform</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="wrap" style="max-width:420px; padding-top:80px;">
+  <div class="brand" style="justify-content:center; margin-bottom:28px;">
+    <span class="mark"></span> ARchive Learning
+  </div>
+
+  <div class="panel">
+    <div id="login-view">
+      <h2 style="margin-top:0;">Sign in</h2>
+      <div class="field"><label>Email</label><input id="li-email" type="email" placeholder="you@school.edu" /></div>
+      <div class="field"><label>Password</label><input id="li-password" type="password" placeholder="••••••••" /></div>
+      <button class="btn" style="width:100%; justify-content:center;" onclick="doLogin()">Sign in</button>
+      <p style="text-align:center; color:var(--text-dim); font-size:0.88rem; margin-top:16px;">
+        No account? <a href="#" onclick="toggle(); return false;">Create one</a>
+      </p>
+    </div>
+
+    <div id="register-view" style="display:none;">
+      <h2 style="margin-top:0;">Create account</h2>
+      <div class="field"><label>Full name</label><input id="r-name" /></div>
+      <div class="field"><label>Email</label><input id="r-email" type="email" /></div>
+      <div class="field"><label>Password</label><input id="r-password" type="password" /></div>
+      <div class="field">
+        <label>I am a</label>
+        <select id="r-role">
+          <option value="student">Student</option>
+          <option value="teacher">Teacher</option>
+        </select>
+      </div>
+      <button class="btn" style="width:100%; justify-content:center;" onclick="doRegister()">Create account</button>
+      <p style="text-align:center; color:var(--text-dim); font-size:0.88rem; margin-top:16px;">
+        Already have one? <a href="#" onclick="toggle(); return false;">Sign in</a>
+      </p>
+    </div>
+    <p id="err" style="color:var(--danger); font-size:0.85rem;"></p>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+function toggle(){
+  const l = document.getElementById('login-view');
+  const r = document.getElementById('register-view');
+  l.style.display = l.style.display === 'none' ? 'block' : 'none';
+  r.style.display = r.style.display === 'none' ? 'block' : 'none';
+  document.getElementById('err').textContent = '';
+}
+function landingFor(role){
+  window.location.href = role === 'teacher' ? 'teacher.html' : 'index.html';
+}
+async function doLogin(){
+  try{
+    const user = await apiPost('/login', {
+      email: document.getElementById('li-email').value,
+      password: document.getElementById('li-password').value
+    });
+    setSession(user);
+    landingFor(user.role);
+  }catch(e){ document.getElementById('err').textContent = 'Invalid email or password.'; }
+}
+async function doRegister(){
+  try{
+    const user = await apiPost('/register', {
+      name: document.getElementById('r-name').value,
+      email: document.getElementById('r-email').value,
+      password: document.getElementById('r-password').value,
+      role: document.getElementById('r-role').value
+    });
+    setSession(user);
+    landingFor(user.role);
+  }catch(e){ document.getElementById('err').textContent = 'Could not create account (email may already be used).'; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Browse Models · ARchive Learning</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="stylesheet" href="style.css" />
+<script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><span class="mark"></span> ARchive Learning</div>
+  <div class="nav-links" id="nav-links"></div>
+</div>
+
+<div class="wrap">
+  <div class="page-head">
+    <div class="eyebrow">// STUDENT LIBRARY</div>
+    <h1>3D Learning Modules</h1>
+    <p>Inspect robotics, anatomy, and mechanical models right in your browser — rotate, zoom, and launch AR to place them in your room.</p>
+  </div>
+
+  <div id="filter-row" style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;"></div>
+  <div id="grid" class="grid"></div>
+  <div id="empty" class="empty" style="display:none;">No models have been published yet. Ask your teacher to upload one.</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+let ALL = [];
+
+async function load(){
+  ALL = await apiGet('/models');
+  renderFilters();
+  renderGrid(ALL);
+}
+
+function renderFilters(){
+  const cats = [...new Set(ALL.map(m => m.category).filter(Boolean))];
+  const row = document.getElementById('filter-row');
+  row.innerHTML = `<button class="btn secondary" onclick="renderGrid(ALL)">All</button>` +
+    cats.map(c => `<button class="btn secondary" onclick="renderGrid(ALL.filter(m=>m.category==='${c}'))">${c}</button>`).join('');
+}
+
+function renderGrid(list){
+  const grid = document.getElementById('grid');
+  document.getElementById('empty').style.display = list.length ? 'none' : 'block';
+  grid.innerHTML = list.map(m => `
+    <div class="card">
+      <div class="thumb">
+        <model-viewer src="/storage/models/${m.filename}" camera-controls disable-zoom auto-rotate
+          style="pointer-events:none;"></model-viewer>
+      </div>
+      <div class="body">
+        <div class="tag">${m.category || 'general'}</div>
+        <h3>${m.title}</h3>
+        <p>${m.description || ''}</p>
+        <a class="go" href="viewer.html?id=${m.id}">Open viewer + AR →</a>
+      </div>
+    </div>
+  `).join('');
+}
+
+renderNav('index.html');
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AR Viewer</title>
+<link rel="stylesheet" href="style.css" />
+<script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+<style>
+  body{ padding:0; }
+  .m-wrap{ padding:16px; }
+  .stage{ height:46vh; }
+</style>
+</head>
+<body>
+<div class="m-wrap">
+  <div class="page-head" style="margin-bottom:14px;">
+    <div class="eyebrow" id="cat-label">// MODULE</div>
+    <h1 id="title" style="font-size:1.3rem;">Loading…</h1>
+    <p id="desc" style="font-size:0.88rem;"></p>
+  </div>
+
+  <div class="viewer-stage stage">
+    <model-viewer id="mv" camera-controls auto-rotate shadow-intensity="1" ar ar-modes="webxr scene-viewer quick-look" ar-scale="auto">
+      <button slot="ar-button" class="btn" style="position:absolute; bottom:14px; right:14px;">👓 View in AR</button>
+      <div slot="progress-bar"></div>
+    </model-viewer>
+  </div>
+
+  <div class="panel" style="margin-top:16px;">
+    <div id="quiz-box"><p style="color:var(--text-dim);">Loading quiz…</p></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+const modelId = params.get('id');
+const user = params.get('uid') ? { id: Number(params.get('uid')), name: params.get('uname') || 'Student', role: 'student' } : null;
+let sessionStart = performance.now();
+let usedAR = 0;
+
+async function init(){
+  const m = await apiGet(`/models/${modelId}`);
+  document.getElementById('title').textContent = m.title;
+  document.getElementById('desc').textContent = m.description || '';
+  document.getElementById('cat-label').textContent = '// ' + (m.category || 'MODULE').toUpperCase();
+  document.getElementById('mv').src = `/storage/models/${m.filename}`;
+
+  loadQuiz();
+  document.getElementById('mv').addEventListener('ar-status', (e) => {
+    if (e.detail.status === 'session-started') usedAR = 1;
+  });
+  window.addEventListener('beforeunload', logSession);
+}
+
+async function logSession(){
+  if (!user) return;
+  try{ await apiPost('/sessions', { student_id: user.id, model_id: Number(modelId), used_ar: usedAR }); }catch(e){}
+}
+
+async function loadQuiz(){
+  const questions = await apiGet(`/models/${modelId}/questions`);
+  const box = document.getElementById('quiz-box');
+  if (!questions.length){ box.innerHTML = `<p style="color:var(--text-dim);">No quiz attached yet.</p>`; return; }
+  let current = 0, score = 0;
+
+  function renderQ(){
+    const q = questions[current];
+    box.innerHTML = `
+      <div class="badge" style="margin-bottom:12px;">Question ${current+1} / ${questions.length}</div>
+      <p style="font-weight:600; margin-bottom:14px;">${q.question_text}</p>
+      ${['A','B','C','D'].map(opt => `<button class="qz-option" data-opt="${opt}" onclick="window.__answer('${opt}')">${opt}. ${q['option_'+opt.toLowerCase()]}</button>`).join('')}
+    `;
+  }
+
+  window.__answer = async (opt) => {
+    const buttons = document.querySelectorAll('.qz-option');
+    buttons.forEach(b => b.onclick = null);
+    const result = await apiPost(`/questions/${questions[current].id}/check`, { option: opt });
+    if (result.correct) score++;
+    buttons.forEach(b => {
+      if (b.dataset.opt === result.correct_option) b.classList.add('correct');
+      else if (b.dataset.opt === opt) b.classList.add('wrong');
+    });
+    setTimeout(async () => { current++; current < questions.length ? renderQ() : await finish(); }, 700);
+  };
+
+  async function finish(){
+    const duration = (performance.now() - sessionStart) / 1000;
+    box.innerHTML = `<p>Scoring ${score} / ${questions.length}. Submitting…</p>`;
+    if (user){
+      await apiPost('/quiz/submit', { student_id: user.id, model_id: Number(modelId), score, total_questions: questions.length, duration_seconds: duration });
+    }
+    box.innerHTML = `<p style="color:var(--cyan);">✓ Score ${score}/${questions.length} recorded.</p>`;
+  }
+  renderQ();
+}
+init();
+</script>
+</body>
+</html>

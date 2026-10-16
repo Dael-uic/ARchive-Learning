@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Teacher Dashboard · ARchive Learning</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><span class="mark"></span> ARchive Learning</div>
+  <div class="nav-links" id="nav-links"></div>
+</div>
+
+<div class="wrap">
+  <div class="page-head">
+    <div class="eyebrow">// TEACHER PORTAL</div>
+    <h1>Upload &amp; manage modules</h1>
+    <p>Upload 3D learning models exported from SolidWorks or Blender, attach a quiz, and share them with your class.</p>
+  </div>
+
+  <div class="viewer-shell">
+    <div class="panel">
+      <h3 style="margin-top:0;">1. Publish a new model</h3>
+      <form id="upload-form">
+        <div class="field"><label>Title</label><input id="f-title" required placeholder="e.g. Human Heart (Cross-section)" /></div>
+        <div class="field"><label>Category</label>
+          <select id="f-category">
+            <option value="anatomy">Anatomy</option>
+            <option value="robotics">Robotics</option>
+            <option value="mechanical">Mechanical</option>
+            <option value="general">General</option>
+          </select>
+        </div>
+        <div class="field"><label>Description</label><textarea id="f-desc" rows="3" placeholder="What should students look for?"></textarea></div>
+        <div class="field">
+          <label>3D model file (.glb recommended for SolidWorks CAD exports)</label>
+          <input id="f-file" type="file" accept=".glb,.gltf" required />
+          <small style="color:var(--text-dim);">
+            Export your SolidWorks part or assembly to GLB before uploading.
+            Native .sldprt and .sldasm files are not supported directly.
+          </small>
+        </div>
+        <button class="btn" type="submit">Upload model</button>
+      </form>
+      <p id="upload-msg" style="font-size:0.85rem; margin-top:10px;"></p>
+
+      <details style="margin-top:8px;">
+        <summary style="cursor:pointer; color:var(--text-dim); font-size:0.85rem;">Blender export tips (NFR2 — keep it under 5s load)</summary>
+        <p style="color:var(--text-dim); font-size:0.85rem; line-height:1.7;">
+          File → Export → glTF 2.0 (.glb) → enable <strong>Draco compression</strong> in the export panel.
+          Keep textures ≤ 2K and triangle count reasonable for mobile GPUs.
+        </p>
+      </details>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0;">2. Add quiz questions</h3>
+      <div class="field">
+        <label>Model</label>
+        <select id="q-model"></select>
+      </div>
+      <div class="field"><label>Question</label><input id="q-text" placeholder="Which part is the left ventricle?" /></div>
+      <div class="field"><label>Option A</label><input id="q-a" /></div>
+      <div class="field"><label>Option B</label><input id="q-b" /></div>
+      <div class="field"><label>Option C</label><input id="q-c" /></div>
+      <div class="field"><label>Option D</label><input id="q-d" /></div>
+      <div class="field">
+        <label>Correct option</label>
+        <select id="q-correct"><option>A</option><option>B</option><option>C</option><option>D</option></select>
+      </div>
+      <button class="btn secondary" onclick="addQuestion()">Add question</button>
+      <p id="q-msg" style="font-size:0.85rem; margin-top:10px;"></p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:40px;">Published modules</h3>
+  <table class="table" id="models-table">
+    <thead><tr><th>Title</th><th>Category</th><th>File</th><th>Actions</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script src="app.js"></script>
+<script>
+const teacher = requireRole('teacher');
+
+async function loadModels(){
+  const list = await apiGet('/models');
+  document.querySelector('#models-table tbody').innerHTML = list.map(m => `
+    <tr>
+      <td>${m.title}</td>
+      <td>${m.category || '—'}</td>
+      <td><a href="/storage/models/${m.filename}" target="_blank">${m.filename}</a></td>
+      <td>
+        <a href="viewer.html?id=${m.id}" class="btn secondary" style="padding:6px 10px; font-size:0.8rem;">Preview</a>
+      </td>
+    </tr>
+  `).join('') || `<tr><td colspan="4" style="color:var(--text-dim);">No models yet — upload one above.</td></tr>`;
+
+  const sel = document.getElementById('q-model');
+  sel.innerHTML = list.map(m => `<option value="${m.id}">${m.title}</option>`).join('');
+}
+
+document.getElementById('upload-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData();
+  fd.append('title', document.getElementById('f-title').value);
+  fd.append('description', document.getElementById('f-desc').value);
+  fd.append('category', document.getElementById('f-category').value);
+  fd.append('uploader_id', teacher.id);
+  fd.append('file', document.getElementById('f-file').files[0]);
+
+  const msg = document.getElementById('upload-msg');
+  msg.textContent = 'Uploading…';
+  try{
+    const res = await fetch('/api/models/upload', { method: 'POST', body: fd });
+    if (!res.ok) throw new Error(await res.text());
+    msg.style.color = 'var(--cyan)';
+    msg.textContent = '✓ Model published.';
+    e.target.reset();
+    loadModels();
+  }catch(err){
+    msg.style.color = 'var(--danger)';
+    msg.textContent = 'Upload failed. Check that your model is a valid .glb or .gltf file under 50MB.';
+  }
+});
+
+async function addQuestion(){
+  const msg = document.getElementById('q-msg');
+  try{
+    await apiPost(`/models/${document.getElementById('q-model').value}/questions`, {
+      question_text: document.getElementById('q-text').value,
+      option_a: document.getElementById('q-a').value,
+      option_b: document.getElementById('q-b').value,
+      option_c: document.getElementById('q-c').value,
+      option_d: document.getElementById('q-d').value,
+      correct_option: document.getElementById('q-correct').value,
+    });
+    msg.style.color = 'var(--cyan)';
+    msg.textContent = '✓ Question added.';
+    ['q-text','q-a','q-b','q-c','q-d'].forEach(id => document.getElementById(id).value = '');
+  }catch(e){
+    msg.style.color = 'var(--danger)';
+    msg.textContent = 'Could not add question.';
+  }
+}
+
+renderNav('teacher.html');
+loadModels();
+</script>
+</body>
+</html>

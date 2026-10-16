@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Viewer · ARchive Learning</title>
+<link rel="stylesheet" href="style.css" />
+<script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><span class="mark"></span> ARchive Learning</div>
+  <div class="nav-links" id="nav-links"></div>
+</div>
+
+<div class="wrap">
+  <div class="page-head">
+    <div class="eyebrow" id="cat-label">// MODULE</div>
+    <h1 id="title">Loading…</h1>
+    <p id="desc"></p>
+  </div>
+
+  <div class="viewer-shell">
+    <div class="viewer-stage">
+      <model-viewer id="mv"
+        camera-controls
+        touch-action="pan-y"
+        auto-rotate
+        shadow-intensity="1"
+        exposure="1"
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        ar-scale="auto"
+        poster=""
+      >
+        <button slot="ar-button" class="btn" style="position:absolute; bottom:16px; right:16px;">
+          👓 View in your space (AR)
+        </button>
+        <div slot="progress-bar"></div>
+      </model-viewer>
+    </div>
+
+    <div class="panel">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <span class="mono-label" style="font-family:'IBM Plex Mono', monospace; font-size:0.72rem; color:var(--text-dim);">CONTROLS</span>
+        <span class="badge" id="ar-badge">AR not launched</span>
+      </div>
+      <p style="font-size:0.86rem; color:var(--text-dim); line-height:1.7;">
+        • Drag to rotate · scroll/pinch to zoom<br/>
+        • Tap <strong>View in your space</strong> on a phone/tablet to place the model in AR using your camera<br/>
+        • Android uses Scene Viewer, iOS uses Quick Look (both built into the browser — no app install)
+      </p>
+
+      <hr style="border-color:var(--line); margin:20px 0;" />
+
+      <div id="quiz-box">
+        <p style="color:var(--text-dim);">Loading quiz…</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+const modelId = params.get('id');
+const user = getSession() || (params.get('uid') ? {
+  id: Number(params.get('uid')), name: params.get('uname') || 'Student', role: 'student'
+} : null);
+let sessionStart = performance.now();
+let usedAR = 0;
+
+async function init(){
+  if (!modelId) { document.getElementById('title').textContent = 'No model selected.'; return; }
+  const m = await apiGet(`/models/${modelId}`);
+  document.getElementById('title').textContent = m.title;
+  document.getElementById('desc').textContent = m.description || '';
+  document.getElementById('cat-label').textContent = '// ' + (m.category || 'MODULE').toUpperCase();
+  document.getElementById('mv').src = `/storage/models/${m.filename}`;
+
+  loadQuiz();
+
+  document.getElementById('mv').addEventListener('ar-status', (e) => {
+    if (e.detail.status === 'session-started') {
+      usedAR = 1;
+      document.getElementById('ar-badge').textContent = 'AR active';
+      document.getElementById('ar-badge').classList.add('on');
+    }
+  });
+
+  window.addEventListener('beforeunload', logSession);
+}
+
+async function logSession(){
+  if (!user) return;
+  try{
+    await apiPost('/sessions', { student_id: user.id, model_id: Number(modelId), used_ar: usedAR });
+  }catch(e){}
+}
+
+async function loadQuiz(){
+  const questions = await apiGet(`/models/${modelId}/questions`);
+  const box = document.getElementById('quiz-box');
+  if (!questions.length){
+    box.innerHTML = `<p style="color:var(--text-dim);">No quiz attached to this model yet.</p>`;
+    return;
+  }
+  let current = 0, score = 0;
+
+  function renderQ(){
+    const q = questions[current];
+    box.innerHTML = `
+      <div class="badge" style="margin-bottom:12px;">Question ${current+1} / ${questions.length}</div>
+      <p style="font-weight:600; margin-bottom:14px;">${q.question_text}</p>
+      ${['A','B','C','D'].map(opt => `
+        <button class="qz-option" data-opt="${opt}" onclick="window.__answer('${opt}')">${opt}. ${q['option_'+opt.toLowerCase()]}</button>
+      `).join('')}
+    `;
+  }
+
+  window.__answer = async (opt) => {
+    const q = questions[current];
+    const buttons = document.querySelectorAll('.qz-option');
+    buttons.forEach(b => b.onclick = null); // lock further clicks while we grade
+
+    const result = await apiPost(`/questions/${q.id}/check`, { option: opt });
+    if (result.correct) score++;
+
+    buttons.forEach(b => {
+      if (b.dataset.opt === result.correct_option) b.classList.add('correct');
+      else if (b.dataset.opt === opt) b.classList.add('wrong');
+    });
+
+    setTimeout(async () => {
+      current++;
+      if (current < questions.length){ renderQ(); }
+      else{ await finish(); }
+    }, 700);
+  };
+
+  async function finish(){
+    const duration = (performance.now() - sessionStart) / 1000;
+    box.innerHTML = `<p>Quiz complete — scoring ${score} / ${questions.length}. Submitting…</p>`;
+    if (user){
+      await apiPost('/quiz/submit', {
+        student_id: user.id, model_id: Number(modelId),
+        score: score, total_questions: questions.length, duration_seconds: duration
+      });
+    }
+    box.innerHTML = `<p style="color:var(--cyan);">✓ Score ${score}/${questions.length} recorded. Time: ${duration.toFixed(1)}s</p>`;
+  }
+
+  renderQ();
+}
+
+renderNav('');
+init();
+</script>
+</body>
+</html>
